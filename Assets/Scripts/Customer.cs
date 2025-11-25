@@ -37,6 +37,8 @@ public class CustomerAI : MonoBehaviour, IInteractable
     void Start()
     {
         waitTime = DifficultyManager.Instance.customerWaitTime;
+        agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+        agent.avoidancePriority = 20;
     }
     
     void Awake()
@@ -53,34 +55,38 @@ public class CustomerAI : MonoBehaviour, IInteractable
 
     IEnumerator CustomerRoutine()
     {
-        // Step 1: Walk to the customer spot
-        yield return MoveTo(GetCustomerSpot());
+        // Step 1: Move until we get close enough to the spot
+        Vector3 spot = GetCustomerSpot();
+        agent.isStopped = false;
+        agent.SetDestination(spot);
+
+        // Wait until close ENOUGH (not perfectly arrived)
+        while (Vector3.Distance(transform.position, spot) > 1.2f && !wasServed)
+        {
+            yield return null;
+        }
+
+        // Stop moving (or will stop later due to collision logic)
+        agent.isStopped = true;
 
         // Step 2: Decide what the customer wants
         desiredItem = (Random.value > 0.5f) ? ItemType.FishDish : ItemType.CrabDish;
 
-        // Step 3: Display request (placeholder)
+        // Step 3: Display desire immediately when near the spot
         DisplayDesire(desiredItem);
 
-        // Step 4: Wait up to 30 seconds, unless served early
+        // Step 4: Start serving timer without needing to touch the spot exactly
         float timer = 0f;
         while (timer < waitTime && !wasServed)
         {
             timer += Time.deltaTime;
             yield return null;
         }
-        
+
         Destroy(bubbleInstance);
 
         // Step 5: Mood decision
-        if (!wasServed)
-        {
-            SetMood(false);
-        }
-        else
-        {
-            SetMood(true);
-        }
+        SetMood(wasServed);
 
         // Step 6: Walk to exit
         yield return MoveTo(exitPoint.position);
@@ -88,6 +94,7 @@ public class CustomerAI : MonoBehaviour, IInteractable
         // Step 7: Despawn
         Destroy(gameObject);
     }
+
     
     Vector3 GetCustomerSpot()
     {
@@ -173,6 +180,61 @@ public class CustomerAI : MonoBehaviour, IInteractable
             player.activeItem = null;
             SetMood(false);
             Destroy(player.activeItem);
+        }
+        agent.isStopped = false;
+    }
+    
+    private int collisions = 0;
+    private bool canMoveForAwhile = false;
+    private Coroutine resumeRoutine = null;
+
+
+    private IEnumerator ResumeRoutine()
+    {
+        canMoveForAwhile = true;
+        agent.isStopped = false;
+        yield return new WaitForSeconds(4f);
+        canMoveForAwhile = false;
+        if (!wasServed)
+        {
+            agent.isStopped = true;
+        }
+        resumeRoutine = null;
+    }
+    
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.GetComponent<CustomerAI>())
+        {
+            collisions++;
+            
+            if (!wasServed && !canMoveForAwhile)
+            {
+                agent.isStopped = true;
+            }
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.GetComponent<CustomerAI>())
+        {
+            collisions--;
+            if (collisions <= 0)
+            {
+                collisions = 0;
+                agent.isStopped = false;
+            }
+            else
+            {
+                if (resumeRoutine != null)
+                {
+                    StopCoroutine(resumeRoutine);
+                    canMoveForAwhile = false;
+                    agent.isStopped = false;
+                }
+                resumeRoutine = StartCoroutine(ResumeRoutine());
+            }
         }
     }
 }

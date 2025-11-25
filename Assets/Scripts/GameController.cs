@@ -20,7 +20,7 @@ public class Clock : MonoBehaviour
     
     public TMP_Text highScoreText;
     public int highScore = 0;
-
+    
     void Start()
     {
         moneyGoal = DifficultyManager.Instance.moneyLimit;
@@ -37,7 +37,7 @@ public class Clock : MonoBehaviour
             DisplayTime();
         }
 
-        if (hours >= 22)
+        if (hours >= 20)
         {
             EndGame();
         }
@@ -69,17 +69,17 @@ public class Clock : MonoBehaviour
     
     public void EndGame()
     {
+        var player = fpsController.gameObject.GetComponent<Player>();
+        
         LoadHighScore();
-        SaveHighScore(highScore);
+        SaveHighScore(player.Money);
         highScoreText.text = "Highscore: " + highScore.ToString();
         
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         fpsController.enabled = false;
         UIScreen.SetActive(false);
-        var player = fpsController.gameObject.GetComponent<Player>();
         
-
         if (player.Money < moneyGoal)
         {
             Lose();
@@ -119,6 +119,7 @@ public class Clock : MonoBehaviour
             highScore = score;
             PlayerPrefs.SetInt("HighScore-"+(int)DifficultyManager.Instance.difficulty, highScore);
             PlayerPrefs.Save(); 
+            LoadHighScore();
         }
     }
 

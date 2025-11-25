@@ -64,14 +64,14 @@ public class DifficultyManager : MonoBehaviour
         }
         else if (difficulty == Difficulty.Hard)
         {
-            customerMinSpawnTime = 10;
-            customerMaxSpawnTime = 30;
+            customerMinSpawnTime = 5;
+            customerMaxSpawnTime = 25;
             maxFishBite = 40;
             minFishBite = 15;
-            pullLimit = 5;
+            pullLimit = 7;
             cookTime = 15;
-            overcookTime = 5;
-            moneyLimit = 1000;
+            overcookTime = 10;
+            moneyLimit = 800;
             customerWaitTime = 60;
         }
     }

@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 6153950524997399782}
   - component: {fileID: 9220203611855541675}
   - component: {fileID: 7329274278437302495}
+  - component: {fileID: 4626195267093114093}
   m_Layer: 0
   m_Name: customer (1)
   m_TagString: Untagged
@@ -119,7 +120,6 @@ MonoBehaviour:
   fishBubblePrefab: {fileID: 3686303113686267493, guid: 38d763c0bed724b3894cdc7a43197bbd, type: 3}
   bubblePosition: {fileID: 7300451234576900194}
   bubbleInstance: {fileID: 0}
-  playerCamera: {fileID: 0}
 --- !u!136 &6153950524997399782
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -139,10 +139,10 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.010354671
-  m_Height: 0.033534613
+  m_Radius: 0.012036233
+  m_Height: 0.03308537
   m_Direction: 1
-  m_Center: {x: 0.00000076042465, y: 0.016829172, z: 0.00022655769}
+  m_Center: {x: 0, y: 0.01658423, z: -0}
 --- !u!82 &9220203611855541675
 AudioSource:
   m_ObjectHideFlags: 0
@@ -164,7 +164,7 @@ AudioSource:
   SpatializePostEffects: 0
   Priority: 128
   DopplerLevel: 1
-  MinDistance: 1
+  MinDistance: 1.9646014
   MaxDistance: 500
   Pan2D: 0
   rolloffMode: 0
@@ -249,7 +249,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 7968535900458251616}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 0.013
+  m_Radius: 0.01
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -262,6 +262,33 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!54 &4626195267093114093
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7968535900458251616}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &8555384068346515066
 GameObject:
   m_ObjectHideFlags: 0
