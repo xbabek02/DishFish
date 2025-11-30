@@ -69,10 +69,12 @@ public class FishingRodController : MonoBehaviour
     private float pullFailTime = 5f;
     
     [Header("Hard Difficulty")]
-    public float pullHeat = 0f;
-    public float heatIncreaseMultiplier = 12f;  // how much heat per scroll unit
-    public float heatCooldownRate = 0.25f;     // how fast heat cools when idle
-    public float heatFailThreshold = 1f;    // above this triggers fail routine
+    private float heat;                         
+    private float heatIncrease = 80f;         
+    private float heatCooldown = 0.35f;        
+    private float dangerThreshold = 0.75f;     
+    private float failHoldTime = 1.2f;     
+    private float dangerTimer = 0f;
     
     void Awake()
     {
@@ -290,13 +292,17 @@ public class FishingRodController : MonoBehaviour
             accumulatedAngle,
             Time.deltaTime * handleSmoothSpeed
         );
+        
+        rodHandle.localRotation = Quaternion.Euler(currentHandleAngle, -90f, 0f);
 
         if (isPulling && DifficultyManager.Instance.difficulty == Difficulty.Hard)
         {
-            HandleHardDificulty(scrollInput);
+            if (!HandleHardDificulty(scrollInput))
+            {
+                return;
+            }
+            
         }
-        
-        rodHandle.localRotation = Quaternion.Euler(currentHandleAngle, -90f, 0f);
 
         if (!pullStarted && fish)
         {
@@ -315,35 +321,58 @@ public class FishingRodController : MonoBehaviour
         }
     }
 
-    private void HandleHardDificulty(float scrollAmount)
+    private bool HandleHardDificulty(float scrollAbs)
     {
-        bool isScrolling = scrollAmount > 0f;
+        bool isScrolling = scrollAbs > 0f;
 
-        if (isScrolling && currentLineLength > 5f)
+        if (scrollAbs > 1.6f && currentLineLength > 0.4)
         {
-            pullHeat += scrollAmount * heatIncreaseMultiplier * Time.deltaTime;
+            ShootRodAndDestroy();
+            return false;
+        }
+
+        if (isScrolling && currentLineLength > 0.4)
+        {
+            // Increase heat proportional to scroll strength
+            heat += scrollAbs * heatIncrease * Time.deltaTime;
         }
         else
         {
-            pullHeat -= heatCooldownRate * Time.deltaTime;
+            heat -= heatCooldown * Time.deltaTime;
         }
 
-        pullHeat = Mathf.Clamp(pullHeat, 0f, 2f);
-
-        float displayHeat = Mathf.Clamp01(pullHeat);
-
+        heat = Mathf.Clamp01(heat);
+        
         if (lineRenderer)
         {
-            Color c = Color.Lerp(Color.gray6, Color.red, displayHeat-0.2f);
-            lineRenderer.startColor = c;
-            lineRenderer.endColor = c;
+            Color lineColor = Color.Lerp(
+                Color.gray7,
+                Color.red,
+                Mathf.SmoothStep(0f, 1f, heat)
+            );
+
+            lineRenderer.startColor = lineColor;
+            lineRenderer.endColor = lineColor;
         }
 
-        if (pullHeat > heatFailThreshold)
+        if (heat > dangerThreshold)
         {
-            ShootRodAndDestroy();
+            dangerTimer += Time.deltaTime;
+
+            if (dangerTimer > failHoldTime)
+            {
+                ShootRodAndDestroy();
+                return false;
+            }
         }
+        else
+        {
+            dangerTimer = 0f;
+        }
+        
+        return true;
     }
+
 
 
     void CreateRopeJoint()
