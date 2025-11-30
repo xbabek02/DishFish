@@ -5,7 +5,6 @@ using JetBrains.Annotations;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-[RequireComponent(typeof(LineRenderer))]
 public class FishingRodController : MonoBehaviour
 {
     [Header("References")]
@@ -69,6 +68,11 @@ public class FishingRodController : MonoBehaviour
     private Coroutine failPullRoutine;
     private float pullFailTime = 5f;
     
+    [Header("Hard Difficulty")]
+    public float pullHeat = 0f;
+    public float heatIncreaseMultiplier = 12f;  // how much heat per scroll unit
+    public float heatCooldownRate = 0.25f;     // how fast heat cools when idle
+    public float heatFailThreshold = 1f;    // above this triggers fail routine
     
     void Awake()
     {
@@ -126,7 +130,6 @@ public class FishingRodController : MonoBehaviour
             HandleCastingInput();
         }
         handleEarlyFishingStop();
-        HandleFishing();
         HandleFishPullSpin();
         
         ApplyRopeParams(false);
@@ -150,8 +153,6 @@ public class FishingRodController : MonoBehaviour
                 Time.deltaTime * handleSmoothSpeed
             );
         }
-        // Spin backwards (opposite of reeling direction)
-        
 
         // Apply rotation to handle
         rodHandle.localRotation = Quaternion.Euler(currentHandleAngle, -90f, 0f);
@@ -159,12 +160,7 @@ public class FishingRodController : MonoBehaviour
         // Play running sound if not playing
         PlayLoop(sfxLineRunning);
     }
-
-
-    private void HandleFishing()
-    {
-        if (!isFishing) return;
-    }
+    
     
     private IEnumerator FishBiteTimer()
     {
@@ -211,6 +207,8 @@ public class FishingRodController : MonoBehaviour
         {
             PlayLoop(sfxLineRunning);
         }
+
+        isPulling = true;
         
         if (failPullRoutine != null)
             StopCoroutine(failPullRoutine);
@@ -239,6 +237,7 @@ public class FishingRodController : MonoBehaviour
     private void ShootRodAndDestroy()
     {
         if (!hookRb) return;
+        transform.SetParent(null);
 
         // Compute shot direction (towards hook, but a bit upward)
         Vector3 dir = (hookRb.position - lineStartPoint.position).normalized;
@@ -258,10 +257,13 @@ public class FishingRodController : MonoBehaviour
         isCasting = false;
         StopLoop();
 
-        // Destroy rod after flight, let physics show the launch
+        if (player.activeItem && player.activeItem.gameObject == gameObject)
+        {
+            player.activeItem = null;
+        }
+
         Destroy(gameObject, 2f);
     }
-    
     
     void HandleScrollInput()
     {
@@ -289,6 +291,11 @@ public class FishingRodController : MonoBehaviour
             Time.deltaTime * handleSmoothSpeed
         );
 
+        if (isPulling && DifficultyManager.Instance.difficulty == Difficulty.Hard)
+        {
+            HandleHardDificulty(scrollInput);
+        }
+        
         rodHandle.localRotation = Quaternion.Euler(currentHandleAngle, -90f, 0f);
 
         if (!pullStarted && fish)
@@ -307,7 +314,38 @@ public class FishingRodController : MonoBehaviour
             StopLoop();
         }
     }
-    
+
+    private void HandleHardDificulty(float scrollAmount)
+    {
+        bool isScrolling = scrollAmount > 0f;
+
+        if (isScrolling && currentLineLength > 5f)
+        {
+            pullHeat += scrollAmount * heatIncreaseMultiplier * Time.deltaTime;
+        }
+        else
+        {
+            pullHeat -= heatCooldownRate * Time.deltaTime;
+        }
+
+        pullHeat = Mathf.Clamp(pullHeat, 0f, 2f);
+
+        float displayHeat = Mathf.Clamp01(pullHeat);
+
+        if (lineRenderer)
+        {
+            Color c = Color.Lerp(Color.gray6, Color.red, displayHeat-0.2f);
+            lineRenderer.startColor = c;
+            lineRenderer.endColor = c;
+        }
+
+        if (pullHeat > heatFailThreshold)
+        {
+            ShootRodAndDestroy();
+        }
+    }
+
+
     void CreateRopeJoint()
     {
         if (!hookRb || !lineStartPoint) return;
@@ -333,7 +371,7 @@ public class FishingRodController : MonoBehaviour
     void UpdateLine()
     {
         if (!lineRenderer || !hookRb || !lineStartPoint) return;
-
+        
         lineRenderer.SetPosition(0, lineStartPoint.position);
         lineRenderer.SetPosition(1, hookRb.position);
 
